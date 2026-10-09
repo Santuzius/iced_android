@@ -2,11 +2,16 @@
 name = "iced_android"
 version = "0.1.0"
 edition = "2024"
-license = "MIT"
+# The bundled Twemoji font (fonts/) is Apache-2.0 (font) and CC-BY-4.0 (art); everything else is MIT.
+license = "MIT AND Apache-2.0 AND CC-BY-4.0"
 description = "Runs iced apps on Android: soft keyboard, text menu, clipboard, system-bar insets, back gesture, system theme and fonts"
 repository = "https://github.com/Santuzius/iced_android"
 # The Java half is not compiled by Cargo; the app's Gradle build includes it (see README).
-include = ["src", "java", "README.md", "LICENSE"]
+include = ["src", "java", "fonts", "README.md", "LICENSE"]
+
+[features]
+# Bundles Mozilla's Twemoji font (1.5 MB) for Android 15+, whose only emoji font iced cannot draw. Its art is CC-BY 4.0: apps that enable it must credit "Twemoji by Twitter, CC-BY 4.0" (see fonts/LICENSE-Twemoji.md).
+emoji = []
 
 [dependencies]
 # The Android support lives in this fork of iced; apps must use the same fork (see README).

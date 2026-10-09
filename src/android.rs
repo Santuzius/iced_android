@@ -34,12 +34,15 @@ pub const DEFAULT_FONT: Font = Font::with_name("Roboto");
 
 /// Each entry lists alternatives, first usable one wins:
 /// - Bold Roboto is a separate file up to Android 11; later versions ship one variable font with all weights.
+/// - From Android 13 flags are in their own bitmap font, NotoColorEmojiFlags.ttf.
 /// - Emoji fonts count only as bitmap (CBDT) fonts. From Android 13 NotoColorEmoji.ttf is a COLRv1 font, which iced cannot draw; the bitmap version moved to NotoColorEmojiLegacy.ttf, which Android 15+ no longer ships. A COLRv1 font must not be loaded at all: it claims ⚠ and other symbols with emoji forms and draws them blank, while NotoSansSymbols-Regular-Subsetted.ttf has them in black and white.
+/// - Without a usable system emoji font, the `emoji` feature adds the bundled Twemoji font.
 pub fn fonts() -> Vec<Cow<'static, [u8]>> {
-    const FILES: [&[&str]; 6] = [
+    const FILES: [&[&str]; 7] = [
         &["Roboto-Regular.ttf"],
         &["Roboto-Bold.ttf"],
         &["NotoColorEmojiLegacy.ttf", "NotoColorEmoji.ttf"],
+        &["NotoColorEmojiFlags.ttf"],
         &["NotoSansSymbols-Regular-Subsetted.ttf"],
         &["NotoSansSymbols-Regular-Subsetted2.ttf"],
         &["DroidSansMono.ttf"],
@@ -52,16 +55,28 @@ pub fn fonts() -> Vec<Cow<'static, [u8]>> {
             let font = alternatives
                 .iter()
                 .filter_map(|file| std::fs::read(format!("/system/fonts/{file}")).ok())
-                .find(|font| !is_emoji || has_table(font, b"CBDT"));
+                .find(|font| !is_emoji || has_table(font, b"CBDT"))
+                .map(Cow::Owned);
+
+            // Android 15+ has no emoji font iced can draw. The bundled one takes the system one's place: before the symbol fonts, which also have ☁ ✅ and flags' letters, but only in black and white.
+            #[cfg(feature = "emoji")]
+            if font.is_none() && alternatives.contains(&"NotoColorEmoji.ttf") {
+                log::info!("Using the bundled Twemoji font for emoji");
+                return Some(Cow::Borrowed(TWEMOJI));
+            }
 
             if font.is_none() {
                 log::info!("Font not found or not usable: {}", alternatives.join(" or "));
             }
 
-            font.map(Cow::Owned)
+            font
         })
         .collect()
 }
+
+/// Mozilla's Twemoji font: colour layers in the COLRv0 format, which iced can draw. Art CC-BY 4.0 by Twitter, font Apache 2.0 by Mozilla; see fonts/LICENSE-Twemoji.md.
+#[cfg(feature = "emoji")]
+const TWEMOJI: &[u8] = include_bytes!("../fonts/Twemoji.Mozilla.ttf");
 
 /// Whether the font file has a table with this tag, from the table directory at the start of every TrueType/OpenType file.
 fn has_table(font: &[u8], tag: &[u8; 4]) -> bool {

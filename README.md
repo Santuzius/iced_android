@@ -21,7 +21,7 @@ A complete app is the [Runtime example](https://github.com/Santuzius/android-ice
 - insets: the app draws behind the status bar, navigation bar, display cutout and keyboard and pads its content by [`insets()`]
 - light/dark system-bar icons, system dark mode (`system::theme`, `theme_changes`), back gesture (as `Key::Named(BrowserBack)`)
 - pause/resume (Home, app switcher) and rotation without restarting the app
-- fonts from `/system/fonts`, since iced finds system fonts only through fontconfig
+- fonts from `/system/fonts`, since iced finds system fonts only through fontconfig; colour emoji on Android 15+ with the `emoji` feature (see below)
 
 Tested on Android 8.0 (emulator), 13 (Pixel 4a) and 17 (emulator, 16 KB pages).
 
@@ -109,11 +109,20 @@ def icedAndroidJava() {
 
 `configChanges` keeps rotation and dark mode from restarting the activity, which would restart `android_main`.
 
+## Emoji on Android 15+
+
+iced draws bitmap (CBDT) and COLRv0 colour fonts, but not COLRv1. Up to Android 14 the system has a bitmap emoji font; Android 15+ ships its emoji only as COLRv1. The `emoji` feature bundles Mozilla's [Twemoji](https://github.com/mozilla/twemoji-colr) font (COLRv0, 1.5 MB) and loads it only when the system has no usable emoji font:
+
+```toml
+iced_android = { git = "https://github.com/Santuzius/iced_android", features = ["emoji"] }
+```
+
+Its art is licensed CC-BY 4.0, which requires credit: show "Twemoji by Twitter, CC-BY 4.0" somewhere in the app, e.g. in an About screen. Without the feature, emoji on Android 15+ show as boxes or in black and white; ⚠ ✓ ✗ → ↻ work everywhere in any case. ⟳ (U+27F3) is in no Android system font.
+
 ## Limitations
 
 - No selection handles (the drag markers at both ends of a selection): after a long press, the selection can only be extended by dragging before lifting.
-- Android 15+ ships its colour emoji only as a COLRv1 font, which iced cannot draw; emoji then show as boxes or in black and white. ⚠ ✓ ✗ → ↻ work everywhere. ⟳ (U+27F3) is in no Android system font.
 
 ## License
 
-MIT
+MIT, except the bundled Twemoji font in `fonts/`: Apache 2.0 (font) and CC-BY 4.0 (art), see `fonts/LICENSE-Twemoji.md`.
