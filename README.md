@@ -21,7 +21,9 @@ A complete app is the [runtime example](examples/runtime) (see [Example](#exampl
 - insets: the app draws behind the status bar, navigation bar, display cutout and keyboard and pads its content by [`insets()`]
 - light/dark system-bar icons, system dark mode (`system::theme`, `theme_changes`), back gesture (as `Key::Named(BrowserBack)`)
 - pause/resume (Home, app switcher) and rotation without restarting the app
-- fonts from `/system/fonts`, since iced finds system fonts only through fontconfig; colour emoji on Android 15+ with the `emoji` feature (see below)
+- [`foreground()`]: tells the app when it can no longer be seen, so it can close its window, which frees iced's GPU resources, and open it again on return (see the example)
+- the app keeps running when Android destroys the activity (e.g. swiped away from the recent apps while a foreground service keeps the process alive); the next activity attaches to it instead of crashing with winit's `RecreationAttempt`. This needs the [android-activity fork](#android-activity) below
+- fonts from `/system/fonts`, since iced finds system fonts only through fontconfig; mapped from the files, not copied to the heap, so Android can drop their pages in the background; colour emoji on Android 15+ with the `emoji` feature (see below)
 
 Tested on Android 8.0 (emulator), 13 (Pixel 4a) and 17 (emulator, 16 KB pages); details below.
 
@@ -36,6 +38,13 @@ crate-type = ["cdylib", "rlib"]
 [dependencies]
 iced = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", features = ["x11"] }
 iced_android = { git = "https://github.com/Santuzius/iced_android" }
+```
+
+<a id="android-activity"></a>Also use the android-activity fork, branch `process-lifetime-0.6`, which lets `android_main` outlive a destroyed activity (`iced_android::init` turns this on). winit allows only one event loop per process ([winit#3325](https://github.com/rust-windowing/winit/issues/3325)), so without it a second activity in the same process cannot start iced again:
+
+```toml
+[patch.crates-io]
+android-activity = { git = "https://github.com/Santuzius/android-activity", branch = "process-lifetime-0.6" }
 ```
 
 `x11` (or `wayland`) only satisfies iced's check that Unix targets choose a display server; nothing of it is built for Android. If other dependencies use iced from crates.io, redirect them to the fork too:
@@ -74,6 +83,7 @@ pub fn run() -> iced::Result {
 // On Message::Insets, if insets.bottom grew (keyboard opened): return iced_android::scroll_to_focused()
 // On theme changes: iced_android::set_system_bars_dark(is_dark)
 // On Back at the top level: iced_android::move_to_background()
+// In the subscription: iced_android::foreground().map(Message::Foreground); on false close the window, on true open it again
 ```
 
 **Gradle.** Compile `IcedActivity` from wherever Cargo checked the crate out (app/build.gradle):

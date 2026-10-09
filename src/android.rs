@@ -24,6 +24,8 @@ pub use iced_winit::android::AndroidApp;
 
 /// Connects the iced runtime to `IcedActivity`. Call it first in `android_main`, before starting the iced app.
 pub fn init(app: AndroidApp) {
+    // winit allows one event loop per process, so a second `android_main` (after the activity was destroyed, e.g. swiped away from the recent apps, while the process lives on) could not start iced again. With this the running one takes over the next activity instead.
+    app.set_outlive_activity(true);
     let _ = APP.set(app.clone());
     runtime::init(app, Java);
     ime_context::set_menu_handler(show_text_menu);
@@ -54,9 +56,9 @@ pub fn fonts() -> Vec<Cow<'static, [u8]>> {
             let is_emoji = alternatives.iter().any(|file| file.contains("Emoji"));
             let font = alternatives
                 .iter()
-                .filter_map(|file| std::fs::read(format!("/system/fonts/{file}")).ok())
+                .filter_map(|file| map_font(&format!("/system/fonts/{file}")))
                 .find(|font| !is_emoji || has_table(font, b"CBDT"))
-                .map(Cow::Owned);
+                .map(Cow::Borrowed);
 
             // Android 15+ has no emoji font iced can draw. The bundled one takes the system one's place: before the symbol fonts, which also have ☁ ✅ and flags' letters, but only in black and white.
             #[cfg(feature = "emoji")]
@@ -72,6 +74,24 @@ pub fn fonts() -> Vec<Cow<'static, [u8]>> {
             font
         })
         .collect()
+}
+
+/// Maps a font file read-only instead of copying it to the heap: its pages are file-backed, so Android can drop them while the app sits in the background, and they are shared with every other process that maps the same system font. Mapped once per process and never unmapped, like a font in the binary.
+fn map_font(path: &str) -> Option<&'static [u8]> {
+    static MAPPED: std::sync::Mutex<Vec<(String, &'static [u8])>> = std::sync::Mutex::new(Vec::new());
+
+    let mut mapped = MAPPED.lock().ok()?;
+    if let Some((_, font)) = mapped.iter().find(|(known, _)| known == path) {
+        return Some(font);
+    }
+
+    let file = std::fs::File::open(path).ok()?;
+    // SAFETY: system fonts are read-only files that do not change while the system runs.
+    let map = unsafe { memmap2::Mmap::map(&file) }.ok()?;
+    let font: &'static [u8] = &Box::leak(Box::new(map))[..];
+    mapped.push((path.to_owned(), font));
+
+    Some(font)
 }
 
 /// Mozilla's Twemoji font: colour layers in the COLRv0 format, which iced can draw. Art CC-BY 4.0 by Twitter, font Apache 2.0 by Mozilla; see fonts/LICENSE-Twemoji.md.
@@ -99,6 +119,32 @@ pub fn insets() -> Subscription<Insets> {
             }
         })
     })
+}
+
+pub fn foreground() -> Subscription<bool> {
+    Subscription::run(|| {
+        stream::channel(4, async |mut output| {
+            let mut receiver = foreground_channel().subscribe();
+
+            loop {
+                // `None` until the activity reported its first start.
+                let foreground = *receiver.borrow_and_update();
+
+                if let Some(foreground) = foreground {
+                    let _ = output.send(foreground).await;
+                }
+
+                if receiver.changed().await.is_err() {
+                    break;
+                }
+            }
+        })
+    })
+}
+
+fn foreground_channel() -> &'static watch::Sender<Option<bool>> {
+    static CHANNEL: OnceLock<watch::Sender<Option<bool>>> = OnceLock::new();
+    CHANNEL.get_or_init(|| watch::Sender::new(None))
 }
 
 fn insets_channel() -> &'static watch::Sender<Insets> {
@@ -238,6 +284,11 @@ extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeBack(
 #[unsafe(no_mangle)]
 extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeInsets(_: JNIEnv, _: JClass, top: jfloat, right: jfloat, bottom: jfloat, left: jfloat) {
     insets_channel().send_replace(Insets { top, right, bottom, left });
+}
+
+#[unsafe(no_mangle)]
+extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeForeground(_: JNIEnv, _: JClass, foreground: jboolean) {
+    foreground_channel().send_replace(Some(foreground == JNI_TRUE));
 }
 
 #[unsafe(no_mangle)]

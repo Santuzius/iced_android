@@ -57,6 +57,7 @@ impl std::fmt::Display for ThemeChoice {
 enum Message {
     WindowOpened(window::Id),
     WindowClosed,
+    Foreground(bool),
     Page(Page),
     Back,
     // Runtime
@@ -86,6 +87,8 @@ enum Message {
 
 struct App {
     window: Option<window::Id>,
+    /// Set while the app is in the background on Android, where its window is closed to free the GPU resources.
+    in_background: bool,
     page: Page,
     insets: Insets,
     ticks: u32,
@@ -108,8 +111,11 @@ struct App {
 
 impl App {
     fn new() -> (Self, Task<Message>) {
+        // Celeste is a daemon that opens its window on demand; on Android the window opens once the activity has a surface. The id counts from the request on, so the first start of the activity does not open a second one.
+        let (id, open) = window::open(window::Settings::default());
         let app = Self {
-            window: None,
+            window: Some(id),
+            in_background: false,
             page: Page::Runtime,
             insets: Insets::default(),
             ticks: 0,
@@ -129,9 +135,6 @@ impl App {
             taps: 0,
             dialog: false,
         };
-        // Celeste is a daemon that opens its window on demand; on Android the window opens once the activity has a surface.
-        let (_id, open) = window::open(window::Settings::default());
-
         (app, Task::batch([open.map(Message::WindowOpened), system::theme().map(Message::SystemTheme)]))
     }
 
@@ -190,6 +193,7 @@ impl App {
             system::theme_changes().map(Message::SystemTheme),
             window::close_events().map(|_| Message::WindowClosed),
             platform::insets().map(Message::Insets),
+            platform::foreground().map(Message::Foreground),
             keys,
         ])
     }
@@ -197,7 +201,30 @@ impl App {
     fn update(&mut self, message: Message) -> Task<Message> {
         match message {
             Message::WindowOpened(id) => self.window = Some(id),
-            Message::WindowClosed => return iced::exit(),
+            Message::WindowClosed => {
+                self.window = None;
+
+                if !self.in_background {
+                    return iced::exit();
+                }
+            }
+            // Like Celeste in the tray: the runtime and the app state live on without a window, and its GPU resources are freed.
+            Message::Foreground(false) => {
+                self.in_background = true;
+
+                if let Some(id) = self.window {
+                    return window::close(id);
+                }
+            }
+            Message::Foreground(true) => {
+                self.in_background = false;
+
+                if self.window.is_none() {
+                    let (id, open) = window::open(window::Settings::default());
+                    self.window = Some(id);
+                    return open.map(Message::WindowOpened);
+                }
+            }
             Message::Page(page) => self.page = page,
             Message::Back => {
                 // Back closes the innermost thing that is open, like Escape in Celeste; at the top level the app goes to the background.

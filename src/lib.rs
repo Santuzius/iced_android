@@ -41,6 +41,11 @@ pub fn insets() -> Subscription<Insets> {
     platform::insets()
 }
 
+/// `true` when the app comes to the foreground, `false` when it can no longer be seen (Home, app switcher, another app, the activity destroyed). Apps that keep running in the background can close their window on `false`, which frees iced's GPU resources, and open it again on `true`. Never emits elsewhere.
+pub fn foreground() -> Subscription<bool> {
+    platform::foreground()
+}
+
 /// What Android's back gesture does at an app's top level: the app keeps running, the launcher comes to the front. Does nothing elsewhere.
 pub fn move_to_background() {
     platform::move_to_background();

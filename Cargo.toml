@@ -23,6 +23,8 @@ iced_runtime = { git = "https://github.com/Santuzius/iced", branch = "android-0.
 iced_widget = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", default-features = false }
 iced_winit = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", default-features = false }
 jni = "0.21"
+# Maps the system fonts instead of copying them to the heap.
+memmap2 = "0.9"
 log = "0.4"
 tokio = { version = "1", features = ["sync"] }
 # IcedActivity extends NativeActivity, so winit must use android-activity's NativeActivity backend.

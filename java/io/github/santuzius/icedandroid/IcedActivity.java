@@ -48,6 +48,8 @@ public class IcedActivity extends NativeActivity {
     static native void nativeBack();
     static native void nativeInsets(float top, float right, float bottom, float left);
     static native void nativeNightMode(boolean night);
+    /** true from onStart, false from onStop: whether the app can be seen. */
+    static native void nativeForeground(boolean foreground);
     /** iced's text around the cursor of the focused field as [before, selected, after], masked in password fields; null without a focused field. */
     static native String[] nativeTextContext();
     static native boolean nativeDeletesGraphemes();
@@ -87,6 +89,18 @@ public class IcedActivity extends NativeActivity {
         }
 
         return "main";
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        nativeForeground(true);
+    }
+
+    @Override
+    protected void onStop() {
+        nativeForeground(false);
+        super.onStop();
     }
 
     @Override
