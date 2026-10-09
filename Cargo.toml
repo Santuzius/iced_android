@@ -12,6 +12,7 @@ include = ["src", "java", "README.md", "LICENSE"]
 # The Android support lives in this fork of iced; apps must use the same fork (see README).
 iced_core = { git = "https://github.com/Santuzius/iced", branch = "android-0.14" }
 iced_futures = { git = "https://github.com/Santuzius/iced", branch = "android-0.14" }
+iced_runtime = { git = "https://github.com/Santuzius/iced", branch = "android-0.14" }
 
 [target.'cfg(target_os = "android")'.dependencies]
 iced_widget = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", default-features = false }

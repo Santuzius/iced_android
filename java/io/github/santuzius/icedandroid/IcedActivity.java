@@ -48,12 +48,14 @@ public class IcedActivity extends NativeActivity {
     static native void nativeBack();
     static native void nativeInsets(float top, float right, float bottom, float left);
     static native void nativeNightMode(boolean night);
-    /** iced's text around the cursor of the focused field as [before, selected, after]; null for password fields. */
+    /** iced's text around the cursor of the focused field as [before, selected, after], masked in password fields; null without a focused field. */
     static native String[] nativeTextContext();
     static native boolean nativeDeletesGraphemes();
 
     private ImeView imeView;
     private ActionMode textMenu;
+    /** Whether iced last asked to show the keyboard rather than to hide it; a delayed show must not undo a later hide. */
+    private boolean keyboardWanted;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -176,6 +178,7 @@ public class IcedActivity extends NativeActivity {
     void showKeyboard(int purpose) {
         runOnUiThread(() -> {
             InputMethodManager manager = getSystemService(InputMethodManager.class);
+            keyboardWanted = true;
             imeView.purpose = purpose;
             imeView.setFocusable(true);
             imeView.setFocusableInTouchMode(true);
@@ -183,12 +186,18 @@ public class IcedActivity extends NativeActivity {
             // Rust calls this on focus, purpose change and every tap into a focused field; each starts a fresh input connection (see ImeConnection).
             manager.restartInput(imeView);
             // Right after requestFocus the input method has not switched to the view yet and ignores showSoftInput, so ask once the focus change is through.
-            imeView.post(() -> manager.showSoftInput(imeView, 0));
+            imeView.post(() -> {
+                if (keyboardWanted) {
+                    manager.showSoftInput(imeView, 0);
+                }
+            });
         });
     }
 
     void hideKeyboard() {
         runOnUiThread(() -> {
+            keyboardWanted = false;
+
             if (Build.VERSION.SDK_INT >= 30) {
                 getWindow().getInsetsController().hide(WindowInsets.Type.ime());
             } else {
@@ -207,11 +216,15 @@ public class IcedActivity extends NativeActivity {
                 textMenu.finish();
             }
 
+            // The long press selected text without the keyboard's knowledge.
+            restartInputSoon();
+
             float density = getResources().getDisplayMetrics().density;
             int px = Math.round(x * density);
             int py = Math.round(y * density);
 
-            textMenu = imeView.startActionMode(new ActionMode.Callback2() {
+            // Started from the decor view, which covers the window: Android hides a floating toolbar whose position lies outside the view that started it.
+            textMenu = getWindow().getDecorView().startActionMode(new ActionMode.Callback2() {
                 @Override
                 public boolean onCreateActionMode(ActionMode mode, Menu menu) {
                     if (hasSelection) {
@@ -248,7 +261,7 @@ public class IcedActivity extends NativeActivity {
 
                 @Override
                 public void onGetContentRect(ActionMode mode, View view, Rect outRect) {
-                    // Relative to imeView, which sits at the window's top left corner.
+                    // Relative to the decor view, so in window coordinates.
                     outRect.set(px, py - 1, px + 1, py);
                 }
             }, ActionMode.TYPE_FLOATING);
@@ -339,7 +352,7 @@ public class IcedActivity extends NativeActivity {
             // No fullscreen editor in landscape: the app shows the text itself.
             info.imeOptions = EditorInfo.IME_ACTION_DONE | EditorInfo.IME_FLAG_NO_EXTRACT_UI | EditorInfo.IME_FLAG_NO_FULLSCREEN;
 
-            String[] context = purpose == 1 ? null : nativeTextContext();
+            String[] context = nativeTextContext();
             String before = context == null ? "" : context[0];
             String selected = context == null ? "" : context[1];
             String after = context == null ? "" : context[2];
@@ -521,6 +534,11 @@ public class IcedActivity extends NativeActivity {
 
         /** Turns the difference between `sent` and `text` into presses and a commit at iced's cursor. */
         private void edit(String text) {
+            // Typing ends the text menu, as in Android's own text fields.
+            if (textMenu != null) {
+                textMenu.finish();
+            }
+
             // The changed range is sent[prefix, sent.length() - suffix). It must contain iced's selection or cursor, because iced only edits there.
             int prefix = 0;
             int prefixLimit = Math.min(sentStart, text.length());

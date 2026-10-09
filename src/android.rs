@@ -230,7 +230,7 @@ extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeNight
     runtime::set_system_theme(if night == JNI_TRUE { Mode::Dark } else { Mode::Light });
 }
 
-/// The focused iced field's text as `[before, selected, after]`, so the keyboard's predictions see the words already there; `null` without a focused field or for password fields.
+/// The focused iced field's text as `[before, selected, after]`, so the keyboard's predictions see the words already there; masked in password fields, `null` without a focused field.
 #[unsafe(no_mangle)]
 extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeTextContext<'local>(mut env: JNIEnv<'local>, _: JClass) -> JObjectArray<'local> {
     let null = || JObjectArray::from(JObject::null());

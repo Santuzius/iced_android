@@ -10,10 +10,13 @@ A complete app is the [Runtime example](https://github.com/Santuzius/android-ice
 
 ## What works
 
-- soft keyboard: predictions, autocorrect, swipe typing and capitalisation, with the text around the cursor passed to the keyboard; password and terminal modes
+- soft keyboard: predictions, autocorrect, swipe typing and capitalisation, with the text around the cursor passed to the keyboard (password fields pass it masked); the word being typed goes straight into the text; password and terminal modes
+- [`scroll_to_focused()`]: scrolls the focused text field into view when the keyboard opens
 - long press in `text_input` and `text_editor` selects a word and opens Android's Cut/Copy/Paste/Select all menu; dragging after the long press extends the selection
 - `text_editor`: tap to place the cursor, drag to scroll
-- `scrollable`: fling (it keeps scrolling after a swipe), and swipes that start on a button scroll instead of pressing it
+- `scrollable`: fling (it keeps scrolling after a swipe), and swipes that start on a button scroll instead of pressing it; scrolling keeps the focused field and the keyboard
+- `tooltip`: opens after a long press and closes on lift, without pressing the button underneath
+- `pick_list`: opens on lift, so swipes that start on it scroll
 - clipboard (`clipboard::read`/`write`)
 - insets: the app draws behind the status bar, navigation bar, display cutout and keyboard and pads its content by [`insets()`]
 - light/dark system-bar icons, system dark mode (`system::theme`, `theme_changes`), back gesture (as `Key::Named(BrowserBack)`)
@@ -68,6 +71,7 @@ pub fn run() -> iced::Result {
 
 // In the subscription: iced_android::insets().map(Message::Insets)
 // In the view: container(content).padding(self.insets)
+// On Message::Insets, if insets.bottom grew (keyboard opened): return iced_android::scroll_to_focused()
 // On theme changes: iced_android::set_system_bars_dark(is_dark)
 // On Back at the top level: iced_android::move_to_background()
 ```

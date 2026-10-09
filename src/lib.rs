@@ -7,9 +7,10 @@
 //! - light/dark system-bar icons, system dark mode, the back gesture
 //! - fonts from `/system/fonts`
 //!
-//! Everything except [`init`] also exists on other platforms, where it does nothing, so apps can call it without `cfg`.
+//! Everything except [`init`] also exists on other platforms, where it does nothing (except [`scroll_to_focused`], which works everywhere), so apps can call it without `cfg`.
 #[cfg(target_os = "android")]
 mod android;
+mod focus;
 #[cfg(not(target_os = "android"))]
 mod other;
 
@@ -19,6 +20,8 @@ pub use android::{AndroidApp, init};
 use android as platform;
 #[cfg(not(target_os = "android"))]
 use other as platform;
+
+pub use focus::scroll_to_focused;
 
 use iced_core::{Font, Padding};
 use iced_futures::Subscription;
