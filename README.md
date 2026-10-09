@@ -6,7 +6,7 @@ It has two parts:
 - the [iced fork](https://github.com/Santuzius/iced/tree/android-0.14), branch `android-0.14`, which runs iced's winit shell on Android and adds touch support to some widgets
 - this crate, which connects iced to the parts of Android that only Java can reach, through `IcedActivity` (a `NativeActivity` subclass in `java/`)
 
-A complete app is the [Runtime example](https://github.com/Santuzius/android-iced-example/tree/main/Runtime) in android-iced-example.
+A complete app is the [runtime example](examples/runtime) (see [Example](#example) below).
 
 ## What works
 
@@ -23,7 +23,7 @@ A complete app is the [Runtime example](https://github.com/Santuzius/android-ice
 - pause/resume (Home, app switcher) and rotation without restarting the app
 - fonts from `/system/fonts`, since iced finds system fonts only through fontconfig; colour emoji on Android 15+ with the `emoji` feature (see below)
 
-Tested on Android 8.0 (emulator), 13 (Pixel 4a) and 17 (emulator, 16 KB pages).
+Tested on Android 8.0 (emulator), 13 (Pixel 4a) and 17 (emulator, 16 KB pages); details below.
 
 ## Setup
 
@@ -119,9 +119,66 @@ iced_android = { git = "https://github.com/Santuzius/iced_android", features = [
 
 Its art is licensed CC-BY 4.0, which requires credit: show "Twemoji by Twitter, CC-BY 4.0" somewhere in the app, e.g. in an About screen. Without the feature, emoji on Android 15+ show as boxes or in black and white; ⚠ ✓ ✗ → ↻ work everywhere in any case. ⟳ (U+27F3) is in no Android system font.
 
+## Example
+
+[examples/runtime](examples/runtime) is one iced app (`iced::daemon`) for desktop and Android, with three pages that exercise what [Celeste](https://github.com/Santuzius/celeste) needs:
+- runtime: `Task::perform`, `Subscription::run` with `stream::channel` fed from a worker thread, `time::every`, `window::close_events`, `system::theme` and `theme_changes`, `keyboard::listen`, `clipboard::read`/`write`
+- widgets: `button`, `container`, `text_input` (also secure), `text_editor`, `tooltip`, `pick_list`, `svg` (Tabler icons via `icondata`, gradients), `scrollable`, `opaque` + `stack` modal, `center`, `toggler`, `rich_text`, `mouse_area`
+- Android: everything under [What works](#what-works)
+
+Files:
+- `src/app.rs`: the iced app, platform-independent; `cargo run --bin desktop` runs it on Linux
+- `src/lib.rs`: `android_main`, which hands over to `iced_android`
+- `app/build.gradle`, `app/src/main/AndroidManifest.xml`: the setup described above, with `iced_android` as a path dependency
+
+Build and run:
+
+```bash
+nix-shell                               # in the repository root: Android SDK, NDK, emulator, JDK, Gradle (NixOS); elsewhere set ANDROID_HOME and ANDROID_NDK_HOME yourself
+rustup target add aarch64-linux-android armv7-linux-androideabi x86_64-linux-android
+cd examples/runtime
+./build.sh                              # all ABIs, release; ./build.sh debug x86_64 for the emulator only
+adb install -r app/build/outputs/apk/release/app-release.apk
+adb logcat -s iced-runtime              # Rust log and panics
+```
+
+Emulators (x86_64 images for API 26, 33, 36 and 37.0 are in `shell.nix`):
+
+```bash
+avdmanager create avd -n api26 -k "system-images;android-26;google_apis;x86_64" -d pixel_4a
+avdmanager create avd -n api37 -k "system-images;android-37.0;google_apis_ps16k;x86_64" -d pixel_4a
+emulator -avd api26 -gpu swiftshader_indirect
+```
+
+To work on the iced fork locally, point Cargo at a local clone in `examples/runtime/.cargo/config.toml` (gitignored):
+
+```toml
+[patch."https://github.com/Santuzius/iced"]
+iced = { path = "../../../iced" }
+iced_core = { path = "../../../iced/core" }
+iced_futures = { path = "../../../iced/futures" }
+iced_runtime = { path = "../../../iced/runtime" }
+iced_widget = { path = "../../../iced/widget" }
+iced_winit = { path = "../../../iced/winit" }
+```
+
+Tested:
+
+| Device | Android | Graphics | Result |
+|---|---|---|---|
+| Pixel 4a | 13 (GrapheneOS), arm64 | wgpu, Vulkan | everything above |
+| Emulator API 26 | 8.0, x86_64 | wgpu, OpenGL ES | starts, keyboard and typing, fonts (an earlier version) |
+| Emulator API 37.0 | 17, x86_64, 16 KB pages | wgpu, OpenGL ES | starts, `Task`, keyboard and typing (an earlier version); colour emoji with Twemoji |
+| Galaxy A3 (2017) | 8.0, armv7 | – | not tested; the APK contains `armeabi-v7a` |
+
 ## Limitations
 
 - No selection handles (the drag markers at both ends of a selection): after a long press, the selection can only be extended by dragging before lifting.
+- `mouse_area` fires `on_press` on touch-down, so a swipe that starts on it still presses it; use `on_release` for touch-friendly areas.
+
+## Origin
+
+This started as a fork of [ibaryshnikov/android-iced-example](https://github.com/ibaryshnikov/android-iced-example) (MIT). The example's Gradle and manifest skeleton and its launcher icons come from there, and the Rust ↔ Java calls for keyboard and clipboard follow its approach; hence its copyright line in `LICENSE`.
 
 ## License
 

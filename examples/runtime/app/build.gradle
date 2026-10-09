@@ -1,0 +1,49 @@
+plugins {
+    id 'com.android.application'
+}
+
+android {
+    namespace 'io.github.santuzius.icedandroid.runtime'
+    compileSdk 36
+    // Matches shell.nix; the SDK in the Nix store is read-only, so Gradle cannot fetch another version.
+    buildToolsVersion '36.0.0'
+
+    defaultConfig {
+        applicationId 'io.github.santuzius.icedandroid.runtime'
+        // Android 8.0, the oldest test phone (Galaxy A3 2017).
+        minSdk 26
+        targetSdk 36
+        versionCode 1
+        versionName '0.1.0'
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            // Signed with the debug key so the release build installs without setting up a keystore.
+            signingConfig signingConfigs.debug
+        }
+    }
+
+    // IcedActivity, the Java half of the iced_android crate, compiled from wherever Cargo checked the crate out.
+    sourceSets.main.java.srcDirs += icedAndroidJava()
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
+    }
+}
+
+/** The java/ folder of the iced_android crate this app's Cargo.toml depends on, as `cargo metadata` reports it. */
+def icedAndroidJava() {
+    def metadata = providers.exec {
+        commandLine 'cargo', 'metadata', '--format-version', '1', '--manifest-path', "${rootDir}/Cargo.toml"
+    }.standardOutput.asText.get()
+    def crate = new groovy.json.JsonSlurper().parseText(metadata).packages.find { it.name == 'iced_android' }
+
+    if (crate == null) {
+        throw new GradleException('iced_android not found in the dependencies of Cargo.toml')
+    }
+
+    return new File(crate.manifest_path).parentFile.toPath().resolve('java').toString()
+}

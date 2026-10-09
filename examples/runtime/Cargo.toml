@@ -1,0 +1,33 @@
+[package]
+name = "runtime"
+version = "0.1.0"
+edition = "2021"
+
+# cdylib for Android (loaded by IcedActivity), rlib for the desktop binary in src/main.rs.
+[lib]
+name = "runtime"
+crate-type = ["cdylib", "rlib"]
+
+[[bin]]
+name = "desktop"
+path = "src/main.rs"
+
+[dependencies]
+# The same feature set Celeste uses (tokio, lazy, svg). `x11` only satisfies iced's check that Unix targets pick a display server; its dependencies are compiled out on Android.
+iced = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", default-features = false, features = ["wgpu", "tiny-skia", "crisp", "web-colors", "tokio", "lazy", "svg", "x11"] }
+iced_android = { path = "../..", features = ["emoji"] }
+# The Tabler icons Celeste uses, to check that they render.
+icondata = { version = "0.7", default-features = false, features = ["tabler-icons"] }
+log = "0.4"
+tokio = { version = "1", features = ["rt-multi-thread", "sync", "time"] }
+
+[target.'cfg(not(target_os = "android"))'.dependencies]
+iced = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", default-features = false, features = ["wayland", "linux-theme-detection"] }
+
+[target.'cfg(target_os = "android")'.dependencies]
+android_logger = "0.15"
+
+[profile.release]
+# Keeps the APK small enough to install over USB quickly while staying debuggable through logcat.
+strip = true
+lto = "thin"
