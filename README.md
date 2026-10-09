@@ -23,7 +23,7 @@ A complete app is the [runtime example](examples/runtime) (see [Example](#exampl
 - pause/resume (Home, app switcher) and rotation without restarting the app
 - [`foreground()`]: tells the app when it can no longer be seen, so it can close its window, which frees iced's GPU resources, and open it again on return (see the example)
 - the app keeps running when Android destroys the activity (e.g. swiped away from the recent apps while a foreground service keeps the process alive); the next activity attaches to it instead of crashing with winit's `RecreationAttempt`. This needs the [android-activity fork](#android-activity) below
-- fonts from `/system/fonts`, since iced finds system fonts only through fontconfig; mapped from the files, not copied to the heap, so Android can drop their pages in the background; colour emoji on Android 15+ with the `emoji` feature (see below)
+- fonts from `/system/fonts`, since iced finds system fonts only through fontconfig; mapped from the files, not copied to the heap, and their pages released from the app's memory while it is in the background (13 MB less on a Pixel 4a with Android 13); colour emoji on Android 15+ with the `emoji` feature (see below)
 
 Tested on Android 8.0 (emulator), 13 (Pixel 4a) and 17 (emulator, 16 KB pages); details below.
 

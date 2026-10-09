@@ -78,20 +78,32 @@ pub fn fonts() -> Vec<Cow<'static, [u8]>> {
 
 /// Maps a font file read-only instead of copying it to the heap: its pages are file-backed, so Android can drop them while the app sits in the background, and they are shared with every other process that maps the same system font. Mapped once per process and never unmapped, like a font in the binary.
 fn map_font(path: &str) -> Option<&'static [u8]> {
-    static MAPPED: std::sync::Mutex<Vec<(String, &'static [u8])>> = std::sync::Mutex::new(Vec::new());
-
-    let mut mapped = MAPPED.lock().ok()?;
+    let mut mapped = MAPPED_FONTS.lock().ok()?;
     if let Some((_, font)) = mapped.iter().find(|(known, _)| known == path) {
-        return Some(font);
+        return Some(&font[..]);
     }
 
     let file = std::fs::File::open(path).ok()?;
     // SAFETY: system fonts are read-only files that do not change while the system runs.
     let map = unsafe { memmap2::Mmap::map(&file) }.ok()?;
-    let font: &'static [u8] = &Box::leak(Box::new(map))[..];
+    let font: &'static memmap2::Mmap = Box::leak(Box::new(map));
     mapped.push((path.to_owned(), font));
 
-    Some(font)
+    Some(&font[..])
+}
+
+/// The fonts [`map_font`] mapped, by path.
+static MAPPED_FONTS: std::sync::Mutex<Vec<(String, &'static memmap2::Mmap)>> = std::sync::Mutex::new(Vec::new());
+
+/// Drops the font pages from the app's memory while it cannot be seen. They are clean pages of read-only files, so nothing is lost: the kernel reads them back from the file (usually still in its page cache) when text is drawn again. Parsing an emoji font touches most of its pages, which otherwise stay counted against the app (9 MB for Android 13's emoji font).
+fn release_font_pages() {
+    let Ok(mapped) = MAPPED_FONTS.lock() else { return };
+    for (path, font) in mapped.iter() {
+        // SAFETY: the mappings are read-only and private to unchanging files; MADV_DONTNEED only drops pages that are read back from the file on the next access.
+        if let Err(error) = unsafe { font.unchecked_advise(memmap2::UncheckedAdvice::DontNeed) } {
+            log::warn!("Could not release the pages of {path}: {error}");
+        }
+    }
 }
 
 /// Mozilla's Twemoji font: colour layers in the COLRv0 format, which iced can draw. Art CC-BY 4.0 by Twitter, font Apache 2.0 by Mozilla; see fonts/LICENSE-Twemoji.md.
@@ -288,6 +300,9 @@ extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeInset
 
 #[unsafe(no_mangle)]
 extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeForeground(_: JNIEnv, _: JClass, foreground: jboolean) {
+    if foreground != JNI_TRUE {
+        release_font_pages();
+    }
     foreground_channel().send_replace(Some(foreground == JNI_TRUE));
 }
 
