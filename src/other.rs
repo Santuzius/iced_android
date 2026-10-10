@@ -20,6 +20,10 @@ pub fn foreground() -> Subscription<bool> {
     Subscription::none()
 }
 
+pub fn font_scale() -> Subscription<f32> {
+    Subscription::none()
+}
+
 pub fn move_to_background() {}
 
 pub fn set_system_bars_dark(_dark: bool) {}

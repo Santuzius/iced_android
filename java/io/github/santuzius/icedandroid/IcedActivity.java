@@ -48,6 +48,7 @@ public class IcedActivity extends NativeActivity {
     static native void nativeBack();
     static native void nativeInsets(float top, float right, float bottom, float left);
     static native void nativeNightMode(boolean night);
+    static native void nativeFontScale(float scale);
     /** true from onStart, false from onStop: whether the app can be seen. */
     static native void nativeForeground(boolean foreground);
     /** iced's text around the cursor of the focused field as [before, selected, after], masked in password fields; null without a focused field. */
@@ -69,7 +70,7 @@ public class IcedActivity extends NativeActivity {
         addContentView(imeView, new ViewGroup.LayoutParams(1, 1));
 
         drawBehindSystemBars();
-        reportNightMode(getResources().getConfiguration());
+        reportConfiguration(getResources().getConfiguration());
 
         if (Build.VERSION.SDK_INT >= 33) {
             // From Android 13 the back gesture no longer arrives as KEYCODE_BACK once enableOnBackInvokedCallback is set; up to 12 winit reports the key itself.
@@ -106,7 +107,7 @@ public class IcedActivity extends NativeActivity {
     @Override
     public void onConfigurationChanged(Configuration config) {
         super.onConfigurationChanged(config);
-        reportNightMode(config);
+        reportConfiguration(config);
     }
 
     /** Lets the native surface cover the whole screen and reports the space the bars, cutout and keyboard take, in dp. */
@@ -153,8 +154,9 @@ public class IcedActivity extends NativeActivity {
         });
     }
 
-    private void reportNightMode(Configuration config) {
+    private void reportConfiguration(Configuration config) {
         nativeNightMode((config.uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES);
+        nativeFontScale(config.fontScale);
     }
 
     /** Starts a new input connection once iced has updated its text, because iced changed it without the keyboard's knowledge (Enter, cut, paste). */

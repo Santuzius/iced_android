@@ -154,6 +154,28 @@ pub fn foreground() -> Subscription<bool> {
     })
 }
 
+pub fn font_scale() -> Subscription<f32> {
+    Subscription::run(|| {
+        stream::channel(4, async |mut output| {
+            let mut receiver = font_scale_channel().subscribe();
+
+            loop {
+                let scale = *receiver.borrow_and_update();
+                let _ = output.send(scale).await;
+
+                if receiver.changed().await.is_err() {
+                    break;
+                }
+            }
+        })
+    })
+}
+
+fn font_scale_channel() -> &'static watch::Sender<f32> {
+    static CHANNEL: OnceLock<watch::Sender<f32>> = OnceLock::new();
+    CHANNEL.get_or_init(|| watch::Sender::new(1.0))
+}
+
 fn foreground_channel() -> &'static watch::Sender<Option<bool>> {
     static CHANNEL: OnceLock<watch::Sender<Option<bool>>> = OnceLock::new();
     CHANNEL.get_or_init(|| watch::Sender::new(None))
@@ -304,6 +326,15 @@ extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeForeg
         release_font_pages();
     }
     foreground_channel().send_replace(Some(foreground == JNI_TRUE));
+}
+
+#[unsafe(no_mangle)]
+extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeFontScale(_: JNIEnv, _: JClass, scale: jfloat) {
+    font_scale_channel().send_if_modified(|current| {
+        let changed = *current != scale;
+        *current = scale;
+        changed
+    });
 }
 
 #[unsafe(no_mangle)]
