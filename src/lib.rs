@@ -46,9 +46,9 @@ pub fn foreground() -> Subscription<bool> {
     platform::foreground()
 }
 
-/// The system's font size as a factor (Settings → Display → Font size; 1.0 is the default), and every change. iced sizes text in logical pixels, which follow Android's display size but not its font size, so apps that want to honour it scale by this, e.g. through `scale_factor`. Never emits elsewhere.
-pub fn font_scale() -> Subscription<f32> {
-    platform::font_scale()
+/// What the system's font size and display size ask of the window's scale factor, as a factor (1.0 when both are as the window started), and every change. iced follows neither by itself: its logical pixels ignore the font size, and winit keeps the display density the process started with. Apps that want to honour them scale by this, e.g. through `scale_factor`. Never emits elsewhere.
+pub fn system_scale() -> Subscription<f32> {
+    platform::system_scale()
 }
 
 /// What Android's back gesture does at an app's top level: the app keeps running, the launcher comes to the front. Does nothing elsewhere.

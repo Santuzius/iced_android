@@ -20,7 +20,7 @@ pub fn foreground() -> Subscription<bool> {
     Subscription::none()
 }
 
-pub fn font_scale() -> Subscription<f32> {
+pub fn system_scale() -> Subscription<f32> {
     Subscription::none()
 }
 

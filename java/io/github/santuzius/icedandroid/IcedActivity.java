@@ -48,7 +48,7 @@ public class IcedActivity extends NativeActivity {
     static native void nativeBack();
     static native void nativeInsets(float top, float right, float bottom, float left);
     static native void nativeNightMode(boolean night);
-    static native void nativeFontScale(float scale);
+    static native void nativeSystemScale(float fontScale, int densityDpi);
     /** true from onStart, false from onStop: whether the app can be seen. */
     static native void nativeForeground(boolean foreground);
     /** iced's text around the cursor of the focused field as [before, selected, after], masked in password fields; null without a focused field. */
@@ -156,7 +156,7 @@ public class IcedActivity extends NativeActivity {
 
     private void reportConfiguration(Configuration config) {
         nativeNightMode((config.uiMode & Configuration.UI_MODE_NIGHT_MASK) == Configuration.UI_MODE_NIGHT_YES);
-        nativeFontScale(config.fontScale);
+        nativeSystemScale(config.fontScale, config.densityDpi);
     }
 
     /** Starts a new input connection once iced has updated its text, because iced changed it without the keyboard's knowledge (Enter, cut, paste). */

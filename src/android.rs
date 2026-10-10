@@ -154,10 +154,10 @@ pub fn foreground() -> Subscription<bool> {
     })
 }
 
-pub fn font_scale() -> Subscription<f32> {
+pub fn system_scale() -> Subscription<f32> {
     Subscription::run(|| {
         stream::channel(4, async |mut output| {
-            let mut receiver = font_scale_channel().subscribe();
+            let mut receiver = system_scale_channel().subscribe();
 
             loop {
                 let scale = *receiver.borrow_and_update();
@@ -171,7 +171,7 @@ pub fn font_scale() -> Subscription<f32> {
     })
 }
 
-fn font_scale_channel() -> &'static watch::Sender<f32> {
+fn system_scale_channel() -> &'static watch::Sender<f32> {
     static CHANNEL: OnceLock<watch::Sender<f32>> = OnceLock::new();
     CHANNEL.get_or_init(|| watch::Sender::new(1.0))
 }
@@ -317,8 +317,28 @@ extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeBack(
 
 #[unsafe(no_mangle)]
 extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeInsets(_: JNIEnv, _: JClass, top: jfloat, right: jfloat, bottom: jfloat, left: jfloat) {
-    insets_channel().send_replace(Insets { top, right, bottom, left });
+    let mut display = DISPLAY.lock().unwrap();
+    display.insets = Insets { top, right, bottom, left };
+    insets_channel().send_replace(display.scaled_insets());
 }
+
+/// What Java reports in its current density, and how that density relates to winit's.
+struct Display {
+    /// Insets in Android's current dp.
+    insets: Insets,
+    /// Current density over the one winit sizes the window by.
+    ratio: f32,
+}
+
+impl Display {
+    /// The insets in winit's logical pixels.
+    fn scaled_insets(&self) -> Insets {
+        let Insets { top, right, bottom, left } = self.insets;
+        Insets { top: top * self.ratio, right: right * self.ratio, bottom: bottom * self.ratio, left: left * self.ratio }
+    }
+}
+
+static DISPLAY: std::sync::Mutex<Display> = std::sync::Mutex::new(Display { insets: Insets { top: 0.0, right: 0.0, bottom: 0.0, left: 0.0 }, ratio: 1.0 });
 
 #[unsafe(no_mangle)]
 extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeForeground(_: JNIEnv, _: JClass, foreground: jboolean) {
@@ -328,9 +348,24 @@ extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeForeg
     foreground_channel().send_replace(Some(foreground == JNI_TRUE));
 }
 
+/// `font_scale` and `density_dpi` from the activity's current `Configuration`.
 #[unsafe(no_mangle)]
-extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeFontScale(_: JNIEnv, _: JClass, scale: jfloat) {
-    font_scale_channel().send_if_modified(|current| {
+extern "system" fn Java_io_github_santuzius_icedandroid_IcedActivity_nativeSystemScale(_: JNIEnv, _: JClass, font_scale: jfloat, density_dpi: jint) {
+    // winit sizes the window by the density it reads from the native configuration, which keeps the value the process started with when the display size changes later; make up the difference.
+    let winit_dpi = APP.get().and_then(|app| app.config().density()).filter(|&dpi| dpi > 0);
+    let display = match winit_dpi {
+        Some(winit_dpi) if density_dpi > 0 => density_dpi as f32 / winit_dpi as f32,
+        _ => 1.0,
+    };
+    {
+        let mut current = DISPLAY.lock().unwrap();
+        if current.ratio != display {
+            current.ratio = display;
+            insets_channel().send_replace(current.scaled_insets());
+        }
+    }
+    let scale = font_scale * display;
+    system_scale_channel().send_if_modified(|current| {
         let changed = *current != scale;
         *current = scale;
         changed

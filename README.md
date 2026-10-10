@@ -19,7 +19,7 @@ A complete app is the [runtime example](examples/runtime) (see [Example](#exampl
 - `pick_list`: opens on lift, so swipes that start on it scroll
 - clipboard (`clipboard::read`/`write`)
 - insets: the app draws behind the status bar, navigation bar, display cutout and keyboard and pads its content by [`insets()`]
-- [`font_scale()`]: the system font size, which iced's logical pixels do not follow by themselves; scale by it, e.g. with `scale_factor`
+- [`system_scale()`]: the system's font size and display size, which iced does not follow by itself (winit keeps the density the process started with); scale by it, e.g. with `scale_factor`
 - light/dark system-bar icons, system dark mode (`system::theme`, `theme_changes`), back gesture (as `Key::Named(BrowserBack)`)
 - pause/resume (Home, app switcher) and rotation without restarting the app
 - [`foreground()`]: tells the app when it can no longer be seen, so it can close its window, which frees iced's GPU resources, and open it again on return (see the example)
