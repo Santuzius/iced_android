@@ -187,6 +187,14 @@ Tested:
 - No selection handles (the drag markers at both ends of a selection): after a long press, the selection can only be extended by dragging before lifting.
 - `mouse_area` fires `on_press` on touch-down, so a swipe that starts on it still presses it; use `on_release` for touch-friendly areas.
 
+## Contributing
+
+Pull requests are welcome, including ones written with AI. I maintain this alongside [Syncative](https://github.com/Santuzius/syncative), its main user, and have little time for it, so don't expect quick replies. I test each pull request on my own phones; if it doesn't break anything in Syncative, I merge it.
+
+This crate and the fork's Android changes were written with the help of AI (Claude), and tested by hand on the devices above.
+
+The iced team does not maintain mobile support ([iced#302](https://github.com/iced-rs/iced/issues/302)), so please report problems here, not to iced.
+
 ## Origin
 
 This started as a fork of [ibaryshnikov/android-iced-example](https://github.com/ibaryshnikov/android-iced-example) (MIT). The example's Gradle and manifest skeleton and its launcher icons come from there, and the Rust ↔ Java calls for keyboard and clipboard follow its approach; hence its copyright line in `LICENSE`.
