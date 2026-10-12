@@ -8,6 +8,10 @@ It has two parts:
 
 A complete app is the [runtime example](examples/runtime) (see [Example](#example) below).
 
+In use in [Syncative](https://github.com/Santuzius/syncative), a file sync app:
+
+![Syncative on Android, built with iced and iced_android: a remote's folders, and the drawer with both remotes](https://raw.githubusercontent.com/Santuzius/syncative/main/doc/img/Screenshot_android.png)
+
 ## What works
 
 - soft keyboard: predictions, autocorrect, swipe typing and capitalisation, with the text around the cursor passed to the keyboard (password fields pass it masked); the word being typed goes straight into the text; password and terminal modes
