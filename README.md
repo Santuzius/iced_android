@@ -6,11 +6,11 @@ It has two parts:
 - the [iced fork](https://github.com/Santuzius/iced/tree/android-0.14) (branch `android-0.14`), which runs iced's winit shell on Android and adds touch support to some widgets
 - this crate, which connects iced to the parts of Android that only Java can reach, through `IcedActivity` (a `NativeActivity` subclass in `java/`)
 
-A complete app is the [runtime example](examples/runtime) (see [Example](#example) below).
+A complete app is the [runtime example](examples/runtime) (see [Example](#example) below), here on a Pixel 4a:
 
-In use in [Syncative](https://github.com/Santuzius/syncative), a file sync app:
+<img src="doc/img/example_runtime.png" width="200" alt="Runtime page: Task, worker thread, timer, system theme, insets"> <img src="doc/img/example_keyboard.png" width="200" alt="Text page with the soft keyboard open"> <img src="doc/img/example_selection.png" width="200" alt="Long press selects a word and opens the Cut/Copy menu"> <img src="doc/img/example_widgets.png" width="200" alt="Widgets page: pick_list, toggler, tooltip, SVG icons, scrolling list">
 
-![Syncative on Android, built with iced and iced_android: a remote's folders, and the drawer with both remotes](https://raw.githubusercontent.com/Santuzius/syncative/main/doc/img/Screenshot_android.png)
+In use in [Syncative](https://github.com/Santuzius/syncative), a file sync app.
 
 ## What works
 
