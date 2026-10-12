@@ -13,10 +13,10 @@ name = "desktop"
 path = "src/main.rs"
 
 [dependencies]
-# The same feature set Celeste uses (tokio, lazy, svg). `x11` only satisfies iced's check that Unix targets pick a display server; its dependencies are compiled out on Android.
+# The features a typical app uses (tokio, lazy, svg). `x11` only satisfies iced's check that Unix targets pick a display server; its dependencies are compiled out on Android.
 iced = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0", default-features = false, features = ["wgpu", "tiny-skia", "crisp", "web-colors", "tokio", "lazy", "svg", "x11"] }
 iced_android = { path = "../..", features = ["emoji"] }
-# The Tabler icons Celeste uses, to check that they render.
+# Tabler icons, to check that an icon font renders.
 icondata = { version = "0.7", default-features = false, features = ["tabler-icons"] }
 log = "0.4"
 tokio = { version = "1", features = ["rt-multi-thread", "sync", "time"] }

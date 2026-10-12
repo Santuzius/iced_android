@@ -1,4 +1,4 @@
-//! A test app for every iced feature Celeste uses, written the way Celeste is: `iced::daemon`, `Task`, `Subscription`.
+//! A test app for the iced features a typical app uses, written the way one is: `iced::daemon`, `Task`, `Subscription`.
 //!
 //! Each page covers one group; the checklist in ../README.md says what to try on a phone.
 use iced_android::{self as platform, Insets};
@@ -111,7 +111,7 @@ struct App {
 
 impl App {
     fn new() -> (Self, Task<Message>) {
-        // Celeste is a daemon that opens its window on demand; on Android the window opens once the activity has a surface. The id counts from the request on, so the first start of the activity does not open a second one.
+        // The app is a daemon that opens its window on demand; on Android the window opens once the activity has a surface. The id counts from the request on, so the first start of the activity does not open a second one.
         let (id, open) = window::open(window::Settings::default());
         let app = Self {
             window: Some(id),
@@ -155,7 +155,7 @@ impl App {
     }
 
     fn subscription(&self) -> Subscription<Message> {
-        // Like Celeste's sync engine: a plain thread pushes events through a tokio channel, which a subscription forwards as messages.
+        // Like a background worker: a plain thread pushes events through a tokio channel, which a subscription forwards as messages.
         let worker = Subscription::run(|| {
             stream::channel(16, async move |mut output| {
                 let (poke_tx, mut poke_rx) = mpsc::channel::<()>(16);
@@ -180,7 +180,7 @@ impl App {
                 }
             })
         });
-        // Celeste's back key is Escape on desktop; Android's back button and gesture arrive as BrowserBack.
+        // The back key is Escape on desktop; Android's back button and gesture arrive as BrowserBack.
         let keys = keyboard::listen().filter_map(|event| match event {
             keyboard::Event::KeyPressed { key: Key::Named(Named::Escape | Named::BrowserBack), .. } => Some(Message::Back),
             keyboard::Event::KeyPressed { key, .. } => Some(Message::Key(format!("{key:?}"))),
@@ -208,7 +208,7 @@ impl App {
                     return iced::exit();
                 }
             }
-            // Like Celeste in the tray: the runtime and the app state live on without a window, and its GPU resources are freed.
+            // Like an app in the tray: the runtime and the app state live on without a window, and its GPU resources are freed.
             Message::Foreground(false) => {
                 self.in_background = true;
 
@@ -227,7 +227,7 @@ impl App {
             }
             Message::Page(page) => self.page = page,
             Message::Back => {
-                // Back closes the innermost thing that is open, like Escape in Celeste; at the top level the app goes to the background.
+                // Back closes the innermost thing that is open, like Escape on desktop; at the top level the app goes to the background.
                 if self.dialog {
                     self.dialog = false;
                 } else if self.page != Page::Runtime {
@@ -379,7 +379,7 @@ impl App {
             mouse_area(container(text(format!("mouse_area: tapped {} times", self.taps))).padding(12).width(Fill).style(container::bordered_box)).on_release(Message::Tapped),
             button("Open modal dialog").on_press(Message::ShowDialog(true)),
             section("SVG"),
-            text("Tabler icons (as in Celeste), tinted by the theme, and a logo with gradients and transparency:"),
+            text("Tabler icons, tinted by the theme, and a logo with gradients and transparency:"),
             row![tabler(icondata::TbCloudCheckOutline), tabler(icondata::TbRefreshOutline), tabler(icondata::TbAlertTriangleOutline), tabler(icondata::TbFolderOpenOutline), tabler(icondata::TbPlayerPauseFilled), tabler(icondata::TbSettingsOutline), svg(svg::Handle::from_memory(LOGO_SVG)).width(48).height(48)].spacing(12).align_y(iced::Center),
             section("Scrolling list"),
             text("Swipe quickly: the list keeps scrolling. Swipes may start on a row's button."),
@@ -415,7 +415,7 @@ fn tabler(icon: icondata::Icon) -> Element<'static, Message> {
     svg(svg::Handle::from_memory(document.into_bytes())).width(28).height(28).style(|theme: &Theme, _| svg::Style { color: Some(theme.palette().text) }).into()
 }
 
-/// Gradients, a gradient transform and transparency, the features of Celeste's logo.
+/// Gradients, a gradient transform and transparency, as in a typical app logo.
 const LOGO_SVG: &[u8] = br##"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 128 128"><defs><linearGradient id="sky" x1="0" y1="0" x2="0" y2="128" gradientUnits="userSpaceOnUse"><stop offset="0" stop-color="#62a0ea"/><stop offset="1" stop-color="#1a5fb4"/></linearGradient><linearGradient id="glow" x1="0" y1="0" x2="1" y2="0" gradientTransform="rotate(45 0.5 0.5)"><stop offset="0" stop-color="#ffffff"/><stop offset="1" stop-color="#ffffff" stop-opacity="0"/></linearGradient></defs><rect x="8" y="8" width="112" height="112" rx="24" fill="url(#sky)"/><path d="M36 86c-9 0-16-7-16-15s7-15 16-15c2-9 10-16 20-16 8 0 15 5 18 12 2-1 4-1 6-1 10 0 18 8 18 18s-8 17-18 17z" fill="#ffffff" opacity="0.9"/><circle cx="44" cy="44" r="28" fill="url(#glow)" opacity="0.5"/></svg>"##;
 
 const CLOUD_SVG: &[u8] = br#"<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="black" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M6.657 18c-2.572 0-4.657-2.007-4.657-4.483s2.085-4.482 4.657-4.482c.393-1.762 1.794-3.2 3.675-3.773 1.88-.572 3.956-.193 5.444 1 1.488 1.19 2.162 3.007 1.77 4.769h.99c1.913 0 3.464 1.56 3.464 3.486 0 1.927-1.551 3.487-3.465 3.487h-11.878"/></svg>"#;

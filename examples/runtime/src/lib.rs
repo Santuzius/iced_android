@@ -1,4 +1,4 @@
-//! The regular iced runtime (`iced::daemon`, `Task`, `Subscription`) on Android, with the features Celeste needs.
+//! The regular iced runtime (`iced::daemon`, `Task`, `Subscription`) on Android, with the features a typical app needs.
 //!
 //! - `app` is plain iced code and runs unchanged on desktop (`cargo run --bin desktop`) and Android.
 //! - The Android support comes from the iced fork (branch `android-0.14`) and the `iced_android` crate with its `IcedActivity`.

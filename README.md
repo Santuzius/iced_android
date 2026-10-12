@@ -136,7 +136,7 @@ Its art is licensed CC-BY 4.0, which requires credit: show "Twemoji by Twitter, 
 
 ## Example
 
-[examples/runtime](examples/runtime) is one iced app (`iced::daemon`) for desktop and Android, with three pages that exercise what [Celeste](https://github.com/Santuzius/celeste) needs:
+[examples/runtime](examples/runtime) is one iced app (`iced::daemon`) for desktop and Android, with three pages that exercise what [Syncative](https://github.com/Santuzius/syncative) needs:
 - runtime: `Task::perform`, `Subscription::run` with `stream::channel` fed from a worker thread, `time::every`, `window::close_events`, `system::theme` and `theme_changes`, `keyboard::listen`, `clipboard::read`/`write`
 - widgets: `button`, `container`, `text_input` (also secure), `text_editor`, `tooltip`, `pick_list`, `svg` (Tabler icons via `icondata`, gradients), `scrollable`, `opaque` + `stack` modal, `center`, `toggler`, `rich_text`, `mouse_area`
 - Android: everything under [What works](#what-works)
