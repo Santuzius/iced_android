@@ -27,6 +27,10 @@ iced = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0",
 [target.'cfg(target_os = "android")'.dependencies]
 android_logger = "0.15"
 
+# iced_android needs the android-activity fork (see the README).
+[patch.crates-io]
+android-activity = { git = "https://github.com/Santuzius/android-activity", tag = "iced_android-v0.1.0" }
+
 [profile.release]
 # Keeps the APK small enough to install over USB quickly while staying debuggable through logcat.
 strip = true
