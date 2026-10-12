@@ -3,7 +3,7 @@
 Runs [iced](https://github.com/iced-rs/iced) apps on Android with iced's normal runtime: `iced::application` or `iced::daemon`, `Task`, `Subscription`, the same code as on desktop.
 
 It has two parts:
-- the [iced fork](https://github.com/Santuzius/iced/tree/android-0.14), branch `android-0.14`, which runs iced's winit shell on Android and adds touch support to some widgets
+- the [iced fork](https://github.com/Santuzius/iced/tree/android-0.14) (branch `android-0.14`), which runs iced's winit shell on Android and adds touch support to some widgets
 - this crate, which connects iced to the parts of Android that only Java can reach, through `IcedActivity` (a `NativeActivity` subclass in `java/`)
 
 A complete app is the [runtime example](examples/runtime) (see [Example](#example) below).
@@ -26,34 +26,34 @@ A complete app is the [runtime example](examples/runtime) (see [Example](#exampl
 - the app keeps running when Android destroys the activity (e.g. swiped away from the recent apps while a foreground service keeps the process alive); the next activity attaches to it instead of crashing with winit's `RecreationAttempt`. This needs the [android-activity fork](#android-activity) below
 - fonts from `/system/fonts`, since iced finds system fonts only through fontconfig; mapped from the files, not copied to the heap, and their pages released from the app's memory while it is in the background (13 MB less on a Pixel 4a with Android 13); colour emoji on Android 15+ with the `emoji` feature (see below)
 
-Tested on Android 8.0 (emulator), 13 (Pixel 4a) and 17 (emulator, 16 KB pages); details below.
+Tested on Android 8.0 (emulator), 13 (Pixel 4a) and 17 (Pixel 7; emulator with 16 KB pages); details below.
 
 ## Setup
 
-**Cargo.toml.** Use iced from the fork; every iced crate must come from the same place:
+**Cargo.toml.** Use iced from the fork; every iced crate must come from the same place. Each release of this crate is tagged `vX.Y.Z` here and `iced_android-vX.Y.Z` in both forks; use the tags of the same release everywhere, or Cargo sees two different iced:
 
 ```toml
 [lib]
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-iced = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", features = ["x11"] }
-iced_android = { git = "https://github.com/Santuzius/iced_android" }
+iced = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0", features = ["x11"] }
+iced_android = { git = "https://github.com/Santuzius/iced_android", tag = "v0.1.0" }
 ```
 
-<a id="android-activity"></a>Also use the android-activity fork, branch `process-lifetime-0.6`, which lets `android_main` outlive a destroyed activity (`iced_android::init` turns this on). winit allows only one event loop per process ([winit#3325](https://github.com/rust-windowing/winit/issues/3325)), so without it a second activity in the same process cannot start iced again:
+<a id="android-activity"></a>Also use the [android-activity fork](https://github.com/Santuzius/android-activity/tree/process-lifetime-0.6) (branch `process-lifetime-0.6`), which lets `android_main` outlive a destroyed activity (`iced_android::init` turns this on). winit allows only one event loop per process ([winit#3325](https://github.com/rust-windowing/winit/issues/3325)), so without it a second activity in the same process cannot start iced again:
 
 ```toml
 [patch.crates-io]
-android-activity = { git = "https://github.com/Santuzius/android-activity", branch = "process-lifetime-0.6" }
+android-activity = { git = "https://github.com/Santuzius/android-activity", tag = "iced_android-v0.1.0" }
 ```
 
 `x11` (or `wayland`) only satisfies iced's check that Unix targets choose a display server; nothing of it is built for Android. If other dependencies use iced from crates.io, redirect them to the fork too:
 
 ```toml
 [patch.crates-io]
-iced = { git = "https://github.com/Santuzius/iced", branch = "android-0.14" }
-iced_core = { git = "https://github.com/Santuzius/iced", branch = "android-0.14" }
+iced = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0" }
+iced_core = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0" }
 # … every iced_* crate they use
 ```
 
@@ -125,7 +125,7 @@ def icedAndroidJava() {
 iced draws bitmap (CBDT) and COLRv0 colour fonts, but not COLRv1. Up to Android 14 the system has a bitmap emoji font; Android 15+ ships its emoji only as COLRv1. The `emoji` feature bundles Mozilla's [Twemoji](https://github.com/mozilla/twemoji-colr) font (COLRv0, 1.5 MB) and loads it only when the system has no usable emoji font:
 
 ```toml
-iced_android = { git = "https://github.com/Santuzius/iced_android", features = ["emoji"] }
+iced_android = { git = "https://github.com/Santuzius/iced_android", tag = "v0.1.0", features = ["emoji"] }
 ```
 
 Its art is licensed CC-BY 4.0, which requires credit: show "Twemoji by Twitter, CC-BY 4.0" somewhere in the app, e.g. in an About screen. Without the feature, emoji on Android 15+ show as boxes or in black and white; ⚠ ✓ ✗ → ↻ work everywhere in any case. ⟳ (U+27F3) is in no Android system font.
@@ -178,6 +178,7 @@ Tested:
 | Device | Android | Graphics | Result |
 |---|---|---|---|
 | Pixel 4a | 13 (GrapheneOS), arm64 | wgpu, Vulkan | everything above |
+| Pixel 7 | 17, arm64 | wgpu, Vulkan | everything above, in daily use with Syncative |
 | Emulator API 26 | 8.0, x86_64 | wgpu, OpenGL ES | starts, keyboard and typing, fonts (an earlier version) |
 | Emulator API 37.0 | 17, x86_64, 16 KB pages | wgpu, OpenGL ES | starts, `Task`, keyboard and typing (an earlier version); colour emoji with Twemoji |
 | Galaxy A3 (2017) | 8.0, armv7 | – | not tested; the APK contains `armeabi-v7a` |
@@ -189,7 +190,7 @@ Tested:
 
 ## Contributing
 
-Pull requests are welcome, including ones written with AI. I maintain this alongside [Syncative](https://github.com/Santuzius/syncative), its main user, and have little time for it, so don't expect quick replies. I test each pull request on my own phones; if it doesn't break anything in Syncative, I merge it.
+Pull requests are welcome, including ones written with AI. I maintain this alongside [Syncative](https://github.com/Santuzius/syncative), its main user, and have little time for it, so don't expect quick replies. I test each pull request on my own phones; if it doesn't break anything in Syncative and my AI agent's review finds it OK, I merge it and tag a new release.
 
 This crate and the fork's Android changes were written with the help of AI (Claude), and tested by hand on the devices above.
 

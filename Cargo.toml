@@ -15,13 +15,13 @@ emoji = []
 
 [dependencies]
 # The Android support lives in this fork of iced; apps must use the same fork (see README).
-iced_core = { git = "https://github.com/Santuzius/iced", branch = "android-0.14" }
-iced_futures = { git = "https://github.com/Santuzius/iced", branch = "android-0.14" }
-iced_runtime = { git = "https://github.com/Santuzius/iced", branch = "android-0.14" }
+iced_core = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0" }
+iced_futures = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0" }
+iced_runtime = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0" }
 
 [target.'cfg(target_os = "android")'.dependencies]
-iced_widget = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", default-features = false }
-iced_winit = { git = "https://github.com/Santuzius/iced", branch = "android-0.14", default-features = false }
+iced_widget = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0", default-features = false }
+iced_winit = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0", default-features = false }
 jni = "0.21"
 # Maps the system fonts instead of copying them to the heap.
 memmap2 = "0.9"
