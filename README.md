@@ -41,23 +41,23 @@ Tested on Android 8.0 (emulator), 13 (Pixel 4a) and 17 (Pixel 7; emulator with 1
 crate-type = ["cdylib", "rlib"]
 
 [dependencies]
-iced = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0", features = ["x11"] }
-iced_android = { git = "https://github.com/Santuzius/iced_android", tag = "v0.1.0" }
+iced = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.1", features = ["x11"] }
+iced_android = { git = "https://github.com/Santuzius/iced_android", tag = "v0.1.1" }
 ```
 
 <a id="android-activity"></a>Also use the [android-activity fork](https://github.com/Santuzius/android-activity/tree/process-lifetime-0.6) (branch `process-lifetime-0.6`), which lets `android_main` outlive a destroyed activity (`iced_android::init` turns this on). winit allows only one event loop per process ([winit#3325](https://github.com/rust-windowing/winit/issues/3325)), so without it a second activity in the same process cannot start iced again:
 
 ```toml
 [patch.crates-io]
-android-activity = { git = "https://github.com/Santuzius/android-activity", tag = "iced_android-v0.1.0" }
+android-activity = { git = "https://github.com/Santuzius/android-activity", tag = "iced_android-v0.1.1" }
 ```
 
 `x11` (or `wayland`) only satisfies iced's check that Unix targets choose a display server; nothing of it is built for Android. If other dependencies use iced from crates.io, redirect them to the fork too:
 
 ```toml
 [patch.crates-io]
-iced = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0" }
-iced_core = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.0" }
+iced = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.1" }
+iced_core = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.1" }
 # … every iced_* crate they use
 ```
 
@@ -129,7 +129,7 @@ def icedAndroidJava() {
 iced draws bitmap (CBDT) and COLRv0 colour fonts, but not COLRv1. Up to Android 14 the system has a bitmap emoji font; Android 15+ ships its emoji only as COLRv1. The `emoji` feature bundles Mozilla's [Twemoji](https://github.com/mozilla/twemoji-colr) font (COLRv0, 1.5 MB) and loads it only when the system has no usable emoji font:
 
 ```toml
-iced_android = { git = "https://github.com/Santuzius/iced_android", tag = "v0.1.0", features = ["emoji"] }
+iced_android = { git = "https://github.com/Santuzius/iced_android", tag = "v0.1.1", features = ["emoji"] }
 ```
 
 Its art is licensed CC-BY 4.0, which requires credit: show "Twemoji by Twitter, CC-BY 4.0" somewhere in the app, e.g. in an About screen. Without the feature, emoji on Android 15+ show as boxes or in black and white; ⚠ ✓ ✗ → ↻ work everywhere in any case. ⟳ (U+27F3) is in no Android system font.
