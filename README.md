@@ -194,9 +194,7 @@ Tested:
 
 ## Contributing
 
-Pull requests are welcome, including ones written with AI. I maintain this alongside [Syncative](https://github.com/Santuzius/syncative), its main user, and have little time for it, so don't expect quick replies. I test each pull request on my own phones; if it doesn't break anything in Syncative and my AI agent's review finds it OK, I merge it and tag a new release.
-
-This crate and the fork's Android changes were written with the help of AI (Claude), and tested by hand on the devices above.
+Issues and pull requests are welcome.
 
 The iced team does not maintain mobile support ([iced#302](https://github.com/iced-rs/iced/issues/302)), so please report problems here, not to iced.
 
