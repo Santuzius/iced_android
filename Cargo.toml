@@ -1,6 +1,6 @@
 [package]
 name = "iced_android"
-version = "0.1.1"
+version = "0.1.2"
 edition = "2024"
 # The bundled Twemoji font (fonts/) is Apache-2.0 (font) and CC-BY-4.0 (art); everything else is MIT.
 license = "MIT AND Apache-2.0 AND CC-BY-4.0"
@@ -15,13 +15,13 @@ emoji = []
 
 [dependencies]
 # The Android support lives in this fork of iced; apps must use the same fork (see README).
-iced_core = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.1" }
-iced_futures = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.1" }
-iced_runtime = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.1" }
+iced_core = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.2" }
+iced_futures = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.2" }
+iced_runtime = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.2" }
 
 [target.'cfg(target_os = "android")'.dependencies]
-iced_widget = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.1", default-features = false }
-iced_winit = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.1", default-features = false }
+iced_widget = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.2", default-features = false }
+iced_winit = { git = "https://github.com/Santuzius/iced", tag = "iced_android-v0.1.2", default-features = false }
 jni = "0.21"
 # Maps the system fonts instead of copying them to the heap.
 memmap2 = "0.9"
